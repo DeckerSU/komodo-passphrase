@@ -1,7 +1,7 @@
 use std::io;
-use sha2::{Sha256, Digest};
+//use sha2::{Sha256, Digest};
 use secp256k1::{Secp256k1, SecretKey, PublicKey};
-use bitcoin_hashes::{hash160, sha256d, Hash};
+use bitcoin_hashes::{hash160, sha256, sha256d, Hash};
 use base58::ToBase58;
 
 struct Coin {
@@ -18,17 +18,24 @@ fn main() {
 
     //let passphrase = "myverysecretandstrongpassphrase_noneabletobrute";
     println!("Passphrase: '{}'", passphrase);
+    /*
     let mut hasher = Sha256::new();
     hasher.update(passphrase);
     let mut result = hasher.finalize();
     let hash_size = result.len();
+    */
 
-    result[0] &= 248; 
+    let hash_byte_array = sha256::Hash::hash(&passphrase.as_bytes()).into_inner();
+
+    let mut result = hash_byte_array;
+    let hash_size = result.len();
+
+    result[0] &= 248;
     result[hash_size-1] &= 127;
     result[hash_size-1] |= 64;
 
     let secp = Secp256k1::new();
-    let secret_key = SecretKey::from_slice(result.as_slice()).unwrap(); //expect("32 bytes, within curve order");
+    let secret_key = SecretKey::from_slice(&result[..]).unwrap(); //expect("32 bytes, within curve order");
     let public_key = PublicKey::from_secret_key(&secp, &secret_key);
     println!("Secret Key: {}", secret_key);
     println!("Public Key: {}", public_key);
@@ -68,7 +75,7 @@ fn addr_from_raw_pubkey(pubkey: &PublicKey, network_byte: u8) -> Result<String, 
        addr = hash_vec.to_base58();
        Ok(addr)
     } else {
-       Err(addr) 
+       Err(addr)
     }
 }
 
