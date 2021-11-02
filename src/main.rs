@@ -79,7 +79,7 @@ fn addr_from_raw_pubkey(pubkey: &PublicKey, network_byte: u8) -> Result<String, 
     }
 }
 
-pub fn wif_from_raw_privkey(privkey: &SecretKey, add_byte: u8) -> Result<String, String> {
+fn wif_from_raw_privkey(privkey: &SecretKey, add_byte: u8) -> Result<String, String> {
 
     let mut wif = "< undefined >".to_string();
     if !privkey.is_empty() {
