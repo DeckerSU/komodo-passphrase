@@ -10,6 +10,8 @@ struct Coin {
     secret_key: u8,
 }
 
+const F_DISPLAY_UNCOMPRESSED: bool = false;
+
 fn main() {
     let mut passphrase = String::new();
     println!("Enter passphrase:");
@@ -37,8 +39,14 @@ fn main() {
     let secp = Secp256k1::new();
     let secret_key = SecretKey::from_slice(&result[..]).unwrap(); //expect("32 bytes, within curve order");
     let public_key = PublicKey::from_secret_key(&secp, &secret_key);
-    println!("Secret Key: {}", secret_key);
-    println!("Public Key: {}", public_key);
+    let public_key_uncompressed_str = hex::encode(&public_key.serialize_uncompressed());
+
+    println!("            Private Key: {}", secret_key);
+    println!("  Compressed Public Key: {}", public_key);
+    if F_DISPLAY_UNCOMPRESSED {
+        println!("Uncompressed Public Key: {}", public_key_uncompressed_str);
+    }
+
 
     let coins = vec![
         Coin { symbol: String::from("BTC"), pubkey_address: 0, secret_key: 128},
@@ -53,18 +61,30 @@ fn main() {
 
     for cur_coin in coins {
         println!("\x1B[01;37m[ \x1B[01;32m{}\x1B[01;37m ]\x1B[0m", cur_coin.symbol);
-        println!("Address: {}", addr_from_raw_pubkey(&public_key, cur_coin.pubkey_address).unwrap());
-        println!("    WIF: {}", wif_from_raw_privkey(&secret_key, cur_coin.secret_key).unwrap());
+        println!("      Compressed WIF: {}", wif_from_raw_privkey(&secret_key, cur_coin.secret_key, true).unwrap());
+        if F_DISPLAY_UNCOMPRESSED {
+            println!("    Uncompressed WIF: {}", wif_from_raw_privkey(&secret_key, cur_coin.secret_key, false).unwrap());
+        }
+        println!("  Compressed Address: {}", addr_from_raw_pubkey(&public_key, cur_coin.pubkey_address, true).unwrap());
+        if F_DISPLAY_UNCOMPRESSED {
+            println!("Uncompressed Address: {}", addr_from_raw_pubkey(&public_key, cur_coin.pubkey_address, false).unwrap());
+        }
     }
 
     // let mut pubkey_hex_str = hex::encode(public_key.serialize());
     // println!("{}", pubkey_hex_str);
 }
 
-fn addr_from_raw_pubkey(pubkey: &PublicKey, network_byte: u8) -> Result<String, String> {
-    let pubkey_ser = pubkey.serialize();
+fn addr_from_raw_pubkey(pubkey: &PublicKey, network_byte: u8, f_compressed: bool) -> Result<String, String> {
+
+    let pubkey_ser : Vec<u8> = if f_compressed {
+        pubkey.serialize().to_vec()
+    } else {
+        pubkey.serialize_uncompressed().to_vec()
+    };
+
     let mut addr = "< undefined >".to_string();
-    if pubkey_ser.len() == 33 {
+    if !pubkey_ser.is_empty() {
         // hash160 HASH160 (SHA256 then RIPEMD160)
        let hash_byte_array = hash160::Hash::hash(&pubkey_ser).into_inner();
        let mut hash_vec = hash_byte_array.to_vec();
@@ -79,7 +99,7 @@ fn addr_from_raw_pubkey(pubkey: &PublicKey, network_byte: u8) -> Result<String, 
     }
 }
 
-fn wif_from_raw_privkey(privkey: &SecretKey, add_byte: u8) -> Result<String, String> {
+fn wif_from_raw_privkey(privkey: &SecretKey, add_byte: u8, f_compressed: bool) -> Result<String, String> {
 
     let mut wif = "< undefined >".to_string();
     if !privkey.is_empty() {
@@ -87,7 +107,9 @@ fn wif_from_raw_privkey(privkey: &SecretKey, add_byte: u8) -> Result<String, Str
         let privkey_vec = hex::decode(privkey_str).unwrap();
         let mut hash_vec = privkey_vec;
         hash_vec.insert(0, add_byte);
-        hash_vec.push(0x01); // compressed
+        if f_compressed {
+            hash_vec.push(0x01);
+        }
         let checksum_sha256d = sha256d::Hash::hash(&hash_vec).into_inner();
         let checksum = &checksum_sha256d[..4];
         hash_vec.extend_from_slice(&checksum);
