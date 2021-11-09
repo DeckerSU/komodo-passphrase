@@ -13,6 +13,7 @@ struct Coin {
 const F_DISPLAY_UNCOMPRESSED: bool = false;
 
 fn main() {
+
     let mut passphrase = String::new();
     println!("Enter passphrase:");
     io::stdin().read_line(&mut passphrase).expect("Can't read passphrase ...");
@@ -126,5 +127,53 @@ fn trim_newline(s: &mut String) {
         if s.ends_with('\r') {
             s.pop();
         }
+    }
+}
+
+#[cfg(test)
+]mod tests {
+    use secp256k1::{Secp256k1, SecretKey, PublicKey};
+    use bitcoin_hashes::{sha256, sha256d, Hash};
+    use base58::ToBase58;
+
+    fn wif_from_raw_privkey(privkey: &SecretKey, add_byte: u8, f_compressed: bool) -> Result<String, String> {
+
+        let mut wif = "< undefined >".to_string();
+        if !privkey.is_empty() {
+            let privkey_str = privkey.to_string();
+            let privkey_vec = hex::decode(privkey_str).unwrap();
+            let mut hash_vec = privkey_vec;
+            hash_vec.insert(0, add_byte);
+            if f_compressed {
+                hash_vec.push(0x01);
+            }
+            let checksum_sha256d = sha256d::Hash::hash(&hash_vec).into_inner();
+            let checksum = &checksum_sha256d[..4];
+            hash_vec.extend_from_slice(&checksum);
+            wif = hash_vec.to_base58();
+            Ok(wif)
+        } else {
+            Err(wif)
+        }
+    }
+
+    #[test]
+    fn komodo_tests() {
+        let passphrase = "myverysecretandstrongpassphrase_noneabletobrute";
+        let hash_byte_array = sha256::Hash::hash(&passphrase.as_bytes()).into_inner();
+        let mut result = hash_byte_array;
+        let hash_size = result.len();
+
+        result[0] &= 248;
+        result[hash_size-1] &= 127;
+        result[hash_size-1] |= 64;
+
+        let secp = Secp256k1::new();
+        let secret_key = SecretKey::from_slice(&result[..]).unwrap(); //expect("32 bytes, within curve order");
+        let public_key = PublicKey::from_secret_key(&secp, &secret_key);
+
+        assert_eq!(format!("{}", secret_key), "907ece717a8f94e07de7bf6f8b3e9f91abb8858ebf831072cdbb9016ef53bc5d");
+        assert_eq!(format!("{}", public_key), "02a854251adfee222bede8396fed0756985d4ea905f72611740867c7a4ad6488c1");
+        assert_eq!(format!("{}", wif_from_raw_privkey(&secret_key, 188, true).unwrap()),"UtrRXqvRFUAtCrCTRAHPH6yroQKUrrTJRmxt2h5U4QTUN1jCxTAh");
     }
 }
