@@ -130,35 +130,14 @@ fn trim_newline(s: &mut String) {
     }
 }
 
-#[cfg(test)
-]mod tests {
-    use secp256k1::{Secp256k1, SecretKey, PublicKey};
-    use bitcoin_hashes::{sha256, sha256d, Hash};
-    use base58::ToBase58;
+#[cfg(test)]
+mod tests {
 
-    fn wif_from_raw_privkey(privkey: &SecretKey, add_byte: u8, f_compressed: bool) -> Result<String, String> {
-
-        let mut wif = "< undefined >".to_string();
-        if !privkey.is_empty() {
-            let privkey_str = privkey.to_string();
-            let privkey_vec = hex::decode(privkey_str).unwrap();
-            let mut hash_vec = privkey_vec;
-            hash_vec.insert(0, add_byte);
-            if f_compressed {
-                hash_vec.push(0x01);
-            }
-            let checksum_sha256d = sha256d::Hash::hash(&hash_vec).into_inner();
-            let checksum = &checksum_sha256d[..4];
-            hash_vec.extend_from_slice(&checksum);
-            wif = hash_vec.to_base58();
-            Ok(wif)
-        } else {
-            Err(wif)
-        }
-    }
+    use super::*; // super - link to the parent module ..
 
     #[test]
-    fn komodo_tests() {
+    fn privpub_test() {
+
         let passphrase = "myverysecretandstrongpassphrase_noneabletobrute";
         let hash_byte_array = sha256::Hash::hash(&passphrase.as_bytes()).into_inner();
         let mut result = hash_byte_array;
@@ -174,6 +153,16 @@ fn trim_newline(s: &mut String) {
 
         assert_eq!(format!("{}", secret_key), "907ece717a8f94e07de7bf6f8b3e9f91abb8858ebf831072cdbb9016ef53bc5d");
         assert_eq!(format!("{}", public_key), "02a854251adfee222bede8396fed0756985d4ea905f72611740867c7a4ad6488c1");
+    }
+
+    #[test]
+    fn wifaddr_test() {
+
+        let secp = Secp256k1::new();
+        let key_arr = [0x90, 0x7e, 0xce, 0x71, 0x7a, 0x8f, 0x94, 0xe0, 0x7d, 0xe7, 0xbf, 0x6f, 0x8b, 0x3e, 0x9f, 0x91, 0xab, 0xb8, 0x85, 0x8e, 0xbf, 0x83, 0x10, 0x72, 0xcd, 0xbb, 0x90, 0x16, 0xef, 0x53, 0xbc, 0x5d];
+        let secret_key = SecretKey::from_slice(&key_arr).unwrap();
+        let public_key = PublicKey::from_secret_key(&secp, &secret_key);
         assert_eq!(format!("{}", wif_from_raw_privkey(&secret_key, 188, true).unwrap()),"UtrRXqvRFUAtCrCTRAHPH6yroQKUrrTJRmxt2h5U4QTUN1jCxTAh");
+        assert_eq!(format!("{}", addr_from_raw_pubkey(&public_key,  60, true).unwrap()),"RVNKRr2uxPMxJeDwFnTKjdtiLtcs7UzCZn");
     }
 }
