@@ -59,7 +59,6 @@ fn main() {
         Coin { symbol: String::from("AYA"), pubkey_address: 23, secret_key: 176},
         Coin { symbol: String::from("GleecBTC"), pubkey_address: 35, secret_key: 65},
         Coin { symbol: String::from("MIL"), pubkey_address: 50, secret_key: 239},
-        Coin { symbol: String::from("TCR"), pubkey_address: 65, secret_key: 58},
     ];
 
     for cur_coin in coins {
