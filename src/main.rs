@@ -136,6 +136,7 @@ fn trim_newline(s: &mut String) {
 mod tests {
 
     use super::*; // super - link to the parent module ..
+    use secp256k1::rand::rngs::OsRng;
 
     #[test]
     fn privpub_test() {
@@ -166,5 +167,20 @@ mod tests {
         let public_key = PublicKey::from_secret_key(&secp, &secret_key);
         assert_eq!(format!("{}", wif_from_raw_privkey(&secret_key, 188, true).unwrap()),"UtrRXqvRFUAtCrCTRAHPH6yroQKUrrTJRmxt2h5U4QTUN1jCxTAh");
         assert_eq!(format!("{}", addr_from_raw_pubkey(&public_key,  60, true).unwrap()),"RVNKRr2uxPMxJeDwFnTKjdtiLtcs7UzCZn");
+    }
+
+    #[test]
+    fn test_notaries_generate() {
+        // generate 64 testnet notaries array
+        let secp = Secp256k1::new();
+        for num in 0..64 {
+            let mut rng = OsRng::new().expect("OsRng");
+            let (secret_key, public_key) = secp.generate_keypair(&mut rng);
+            // println!("Generated SecretKey : {:?}", secret_key);
+            let cur_coin = Coin { symbol: String::from("KMD"), pubkey_address: 60, secret_key: 188};
+            println!("{{\"s7hfsim_{:02}\", \"{}\"}}, // {} [{}]", num, public_key,
+                addr_from_raw_pubkey(&public_key, cur_coin.pubkey_address, true).unwrap(),
+                wif_from_raw_privkey(&secret_key, cur_coin.secret_key, true).unwrap());
+        }
     }
 }
