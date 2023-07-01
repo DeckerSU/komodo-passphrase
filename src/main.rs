@@ -50,19 +50,19 @@ fn main() {
 
 
     let coins = vec![
-        Coin { symbol: String::from("BTC"), pubkey_address: 0, secret_key: 128},
+        //Coin { symbol: String::from("BTC"), pubkey_address: 0, secret_key: 128},
         Coin { symbol: String::from("KMD"), pubkey_address: 60, secret_key: 188},
         Coin { symbol: String::from("LTC"), pubkey_address: 48, secret_key: 176},
-        Coin { symbol: String::from("GAME"), pubkey_address: 38, secret_key: 166},
+        //Coin { symbol: String::from("GAME"), pubkey_address: 38, secret_key: 166},
         Coin { symbol: String::from("EMC2"), pubkey_address: 33, secret_key: 176},
-        Coin { symbol: String::from("GIN"), pubkey_address: 38, secret_key: 198},
+        //Coin { symbol: String::from("GIN"), pubkey_address: 38, secret_key: 198},
         Coin { symbol: String::from("AYA"), pubkey_address: 23, secret_key: 176},
-        Coin { symbol: String::from("GleecBTC"), pubkey_address: 35, secret_key: 65},
+        //Coin { symbol: String::from("GleecBTC"), pubkey_address: 35, secret_key: 65},
         Coin { symbol: String::from("MIL"), pubkey_address: 50, secret_key: 239},
-        Coin { symbol: String::from("SFUSD"), pubkey_address: 63, secret_key: 188},
+        //Coin { symbol: String::from("SFUSD"), pubkey_address: 63, secret_key: 188},
     ];
 
-    for cur_coin in coins {
+    for cur_coin in &coins {
         println!("\x1B[01;37m[ \x1B[01;32m{}\x1B[01;37m ]\x1B[0m", cur_coin.symbol);
         println!("      Compressed WIF: {}", wif_from_raw_privkey(&secret_key, cur_coin.secret_key, true).unwrap());
         if F_DISPLAY_UNCOMPRESSED {
@@ -72,6 +72,23 @@ fn main() {
         if F_DISPLAY_UNCOMPRESSED {
             println!("Uncompressed Address: {}", addr_from_raw_pubkey(&public_key, cur_coin.pubkey_address, false).unwrap());
         }
+    }
+
+    println!("");
+    for cur_coin in &coins {
+      let wif = wif_from_raw_privkey(&secret_key, cur_coin.secret_key, true).unwrap();
+      match &cur_coin.symbol[..] {
+        "KMD" => println!(r#"$HOME/KomodoOcean/src/komodo-cli importprivkey "{}" "" false
+$HOME/KomodoOcean/src/komodo-cli -ac_name=VRSC importprivkey "{}" "" false
+$HOME/KomodoOcean/src/komodo-cli -ac_name=TOKEL importprivkey "{}" "" false
+$HOME/KomodoOcean/src/komodo-cli -ac_name=MCL importprivkey "{}" "" false
+$HOME/chips/src/chips-cli importprivkey "{}" "" false"#,
+        wif, wif, wif, wif, wif),
+        "EMC2" => println!(r#"$HOME/einsteinium/src/einsteinium-cli importprivkey "{}" "" false"#, wif),
+        "MIL" => println!(r#"$HOME/mil-1/src/mil-cli importprivkey "{}" "" false"#, wif),
+        "AYA" => println!(r#"$HOME/AYAv2/src/aryacoin-cli importprivkey "{}" "" false"#, wif),
+        _=> println!("### {}", &cur_coin.symbol[..]),
+      }
     }
 
     // let mut pubkey_hex_str = hex::encode(public_key.serialize());
